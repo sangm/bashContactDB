@@ -116,45 +116,43 @@ displayRecords() {
 # "database"
 ############################################################
 findRecord() {
-    echo "Usage details" 
-    echo "-p Primary Key"
-    echo "-n Name"
-    echo "-a Address"
-    echo "-# Phone Number"
-    echo "-e Email"
-    echo -n "query> "
-    local query
-    read query
+    read -p "query> " query
 
-    if ! [ -z "$query" ]; then
-        while getopts ":p:n:a:#:e:" opt $query ; do 
-            echo "ARG IS: $opt"
-            case "$opt" in
-                a) echo "$OPTARG" ;;
-                p) echo "$OPTARG" ;;
-                :) echo "Missing argument for -$OPTARG";;
-                \?) echo "Unknown option";;
-            esac
-        done
-    fi
-exit
+    local IFS='|'   
+    query_arr=($query)
+
+    while getopts ":p:a:#:e:" opt ${query_arr[@]}; do
+        case "$opt" in
+            p)  local pk=$(trimWhiteSpace ${OPTARG//\"/});;
+            a)  local addr=$(trimWhiteSpace ${OPTARG//\"/});;
+            \#) local pnum=$(trimWhiteSpace ${$OPTARG/\"/};;
+            e)  local email=$(trimWhiteSpace ${OPTARG//\"/};;
+            e) echo "Email: $OPTARG";;
+            :) echo "$OPTARG needs an argument";;
+            ?) echo "Unknown argument";;
+        esac
+    done
+
+    echo $pk 
+    echo $addr
+    echo $pnum
 }
 
 ############################################################
 # Function adds a record to the database
 ############################################################
 addRecord() {
-    # Calculate the primary id
+    # Calculate the primary id, starts at 0, no need to offset
     local pID=$((${#database[@]}))
+    local loc_name
+    local loc_addr
+    local loc_phoneNum
+    local loc_email
 
-    echo -n "What is the name> "
-    read loc_name
-    echo -n "What is the address> "
-    read loc_addr
-    echo -n "What is the phone number> "
-    read loc_phoneNum
-    echo -n "What is the email> "
-    read loc_email
+    read -p "What is the name> " loc_name
+    read -p "What is the address> " loc_addr
+    read -p "What is the phone number> " loc_phoneNum
+    read -p "What is the email> " loc_email
 
     insert_query="$pID | $loc_name | $loc_addr | $loc_phoneNum | $loc_email"
     addEntry "$insert_query"
@@ -165,6 +163,7 @@ addRecord() {
 # Function removes a record from the database
 ############################################################
 removeRecord() {
+    # Assume that you get primary id
     echo "null"
 }
 
@@ -189,19 +188,3 @@ while :; do
         *) "Not a valid choice" ;;
     esac
 done
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
