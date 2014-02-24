@@ -5,6 +5,7 @@
 ############################################################
 DATABASE_FILE="database_file.txt"
 FIELDS=(pid name address phoneNum email)
+QUERY_MATCH=()
 declare -Ag DB
 DB_COUNT=0
 
@@ -53,7 +54,7 @@ addEntry() {
 updateDB() {
     mv ${DATABASE_FILE}  ${DATABASE_FILE}_backup
     for (( i=0; i < $DB_COUNT; ++i )); do
-        if [ -n ${DB[$i,pid]} ]; then
+        if [ ! -z ${DB[$i,pid]} ]; then
             echo "${DB[$i,pid]} | ${DB[$i,name]} | ${DB[$i,address]} | ${DB[$i,phoneNum]} | ${DB[$i,email]}" >> $DATABASE_FILE
         fi
     done
@@ -113,8 +114,10 @@ displayRecords() {
     printf "\e $(tput bold)$(tput sgr 0 1)$(tput setaf 1)%-20s %-20s %-20s %-20s %s$(tput sgr0)\n\n" \
            "Primary Key" "Name" "Address" "Phone Number" "Email"
     for (( i = 0; i < $DB_COUNT; ++i )); do
-        printf "\e $(tput setaf 1)$(tput sgr 0 1)%-20s $(tput setaf 7)%-20s %-20s %-20s %s$(tput sgr0)\n\n" \
-               "${DB[$i,pid]}" "${DB[$i,name]}" "${DB[$i,address]}" "${DB[$i,phoneNum]}" "${DB[$i,email]}"
+        if [ ! -z ${DB[$i,pid]} ]; then
+            printf "\e $(tput setaf 1)$(tput sgr 0 1)%-20s $(tput setaf 7)%-20s %-20s %-20s %s$(tput sgr0)\n\n" \
+                   "${DB[$i,pid]}" "${DB[$i,name]}" "${DB[$i,address]}" "${DB[$i,phoneNum]}" "${DB[$i,email]}"
+        fi
     done
     echo -e "$(tput sgr0)"
 }
@@ -124,14 +127,15 @@ displayRecords() {
 # "database"
 ############################################################
 findRecord() {
-    read -p "query> " query 
+#    read -p "query> " query 
 #    read query <<< $(echo "-p0|-a\"Fake Address A\"|-n\"Sang Mercado\"")
 
     local IFS='|'   
-    local query_arr=($query)
-    local matches=()
+    local query_arr=($1)
     declare -A val_choices
     local OPTIND
+
+    unset QUERY_MATCH
 
     while getopts "p:n:a:#:e:" opt ${query_arr[@]}; do
         case "$opt" in
@@ -153,13 +157,9 @@ findRecord() {
     for i in ${!val_choices[@]}; do
         for (( j = 0; j < $DB_COUNT; ++j)); do
             if [[ "${val_choices[$i]}" =~ ${DB[$j,$i]} ]]; then
-                matches+=($j)
+                QUERY_MATCH+=($j)
             fi
         done
-    done
-
-    for i in ${matches[@]}; do
-        echo ${DB[$i,pid]}, ${DB[$i,name]} ${DB[$i,address]} ${DB[$i,phoneNum]} ${DB[$i,email]}
     done
 
 }
@@ -192,11 +192,15 @@ removeRecord() {
     # Assume that you get primary id
     local pID
     read -p "What is the primary id of the person you want to remove> " pID
+    local query="-p$pID"
 
-    if [ "${DB[$pID,pid]}" ]; then
-        echo "Removing ${DB[$pID,name]}"
+    findRecord "$query"
+    local index=${QUERY_MATCH[0]}
+
+    if [ "${DB[$index,pid]}" ]; then
+        echo "Removing ${DB[$index,name]}"
         for ((i = 0; i < ${#FIELDS[@]}; ++i)); do
-            unset DB[$pID,${FIELDS[$i]}]
+            unset DB[$index,${FIELDS[$i]}]
         done
         updateDB
     else
@@ -209,8 +213,27 @@ removeRecord() {
 ############################################################
 updateRecord() {
     local pID
-    read -p "What is the primary id of the person you want to update> " pID
+    local IFS='|'
 
+    read -p "What is the primary id of the person you want to update> " pID
+    query="-p$pID"
+
+    findRecord "-p$pID"
+    local index=${QUERY_MATCH[0]}
+
+    read -p "What do you want to update? " update
+    local update_arr=($update)
+
+    while getopts "n:a:#:e:" opt "${update_arr[@]}"; do
+        case "$opt" in
+            n)  DB[$index,name]="$OPTARG";;
+            a)  DB[$index,address]="$OPTARG";;
+            \#) DB[$index,phoneNum]="$OPTARG";;
+            e)  DB[$index,email]="$OPTARG";;
+            :)  echo "$OPTARG needs an argument ";;
+            ?)  echo "Unknown Option";;
+          esac
+    done
 }
 
 populateDatabase
@@ -219,7 +242,14 @@ while :; do
     printMenu
     case "$selection" in 
         a) displayRecords $DB; echo ;;
-        b) findRecord;     echo ;;
+        b) 
+            read -p "query> " query
+            findRecord "$query"
+            for index in ${QUERY_MATCH[@]}; do
+                printf "%s\t%s\t%s\t%s\t%s\n"  ${DB[$index,pid]} ${DB[$index,name]} \
+                    ${DB[$index,address]} ${DB[$index,phoneNum]} ${DB[$index,email]}
+            done
+            echo ;;
         c) addRecord;      echo ;;
         d) updateRecord;   echo ;;
         e) removeRecord;   echo ;;
