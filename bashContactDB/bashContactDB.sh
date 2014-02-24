@@ -4,13 +4,9 @@
 ################# List of Global Variables ################# 
 ############################################################
 DATABASE_FILE="database_file.txt"
-declare -A DB
+FIELDS=(pid name address phoneNum email)
+declare -Ag DB
 DB_COUNT=0
-DB_PID=()
-DB_NAME=()
-DB_ADDRESS=()
-DB_PHONENUM=()
-DB_EMAIL=()
 
 ############################################################
 ################# List of Auxilary Functions ###############
@@ -35,21 +31,19 @@ trimWhiteSpace() {
 addEntry() {
     local IFS='|'
     set $1
+
+    for (( i = 0; i < ${#FIELDS[@]}; ++i)); do
+        DB[$DB_COUNT,${FIELDS[$i]}]=$(trimWhiteSpace $1)
+        shift
+    done
     
-    DB[$DB_COUNT,pid]=$(trimWhiteSpace $1)
-    DB[$DB_COUNT,name]=$(trimWhiteSpace $2)
-    DB[$DB_COUNT,address]=$(trimWhiteSpace $3)
-    DB[$DB_COUNT,phoneNum]=$(trimWhiteSpace $4)
-    DB[$DB_COUNT,email]=$(trimWhiteSpace $5)
+#    DB[$DB_COUNT,pid]=$(trimWhiteSpace $1)
+#    DB[$DB_COUNT,name]=$(trimWhiteSpace $2)
+#    DB[$DB_COUNT,address]=$(trimWhiteSpace $3)
+#    DB[$DB_COUNT,phoneNum]=$(trimWhiteSpace $4)
+#    DB[$DB_COUNT,email]=$(trimWhiteSpace $5)
 
     ((DB_COUNT++))
-    
-    DB_PID+=($(trimWhiteSpace $1))
-    DB_NAME+=($(trimWhiteSpace $2))
-    DB_ADDRESS+=($(trimWhiteSpace $3))
-    DB_PHONENUM+=($(trimWhiteSpace $4))
-    DB_EMAIL+=($(trimWhiteSpace $5))
-
 }
 
 ############################################################
@@ -58,10 +52,6 @@ addEntry() {
 ############################################################
 updateDB() {
     mv ${DATABASE_FILE}  ${DATABASE_FILE}_backup
-#    for i in ${!DB_PID[@]}; do
-#        echo "${DB_PID[$i]} | ${DB_NAME[$i]} | ${DB_ADDRESS[$i]} | ${DB_PHONENUM[$i]} | ${DB_EMAIL[$i]}" >> $DATABASE_FILE
-#    done
-
     for (( i=0; i < $DB_COUNT; ++i )); do
         echo "${DB[$i,pid]} | ${DB[$i,name]} | ${DB[$i,address]} | ${DB[$i,phoneNum]} | ${DB[$i,email]}" >> $DATABASE_FILE
     done
@@ -120,12 +110,6 @@ populateDatabase() {
 displayRecords() {
     printf "\e $(tput bold)$(tput sgr 0 1)$(tput setaf 1)%-20s %-20s %-20s %-20s %s$(tput sgr0)\n\n" \
            "Primary Key" "Name" "Address" "Phone Number" "Email"
-#    for id in ${!DB_PID[@]}; do
-#        printf "\e $(tput setaf 1)$(tput sgr 0 1)%-20s $(tput setaf 7)%-20s %-20s %-20s %s$(tput sgr0)\n\n" \
-#               "${DB_PID[$id]}" "${DB_NAME[$id]}" "${DB_ADDRESS[$id]}" "${DB_PHONENUM[$id]}" "${DB_EMAIL[$id]}"
-#    done
-#    echo -e "$(tput sgr0)"
-
     for (( i = 0; i < $DB_COUNT; ++i )); do
         printf "\e $(tput setaf 1)$(tput sgr 0 1)%-20s $(tput setaf 7)%-20s %-20s %-20s %s$(tput sgr0)\n\n" \
                "${DB[$i,pid]}" "${DB[$i,name]}" "${DB[$i,address]}" "${DB[$i,phoneNum]}" "${DB[$i,email]}"
@@ -139,20 +123,43 @@ displayRecords() {
 ############################################################
 findRecord() {
     read -p "query> " query 
+#    read query <<< $(echo "-p0|-a\"Fake Address A\"|-n\"Sang Mercado\"")
 
     local IFS='|'   
-    query_arr=($query)
+    local query_arr=($query)
+    local matches=()
+    declare -A val_choices
+    local OPTIND
 
-    while getopts ":p:a:#:e:" opt ${query_arr[@]}; do
+    while getopts "p:n:a:#:e:" opt ${query_arr[@]}; do
         case "$opt" in
-            p)  local pk=$(trimWhiteSpace ${OPTARG//\"/});;
-            a)  local addr=$(trimWhiteSpace ${OPTARG//\"/});;
-            \#) local pnum=$(trimWhiteSpace ${$OPTARG/\"/};;
-            e)  local email=$(trimWhiteSpace ${OPTARG//\"/};;
+            p)  local pk=$(trimWhiteSpace ${OPTARG//\"/})
+                val_choices[pid]="$pk";;
+            n)  local name=$(trimWhiteSpace ${OPTARG//\"/})
+                val_choices[name]="$name";;
+            a)  local addr=$(trimWhiteSpace ${OPTARG//\"/})
+                val_choices[address]="$addr";;
+            \#) local pnum=$(trimWhiteSpace ${$OPTARG//\"/})
+                val_choices[phoneNum]="$pnum";;
+            e)  local email=$(trimWhiteSpace ${OPTARG//\"/})
+                val_choices[email]="$email";;
             :) echo "$OPTARG needs an argument";;
             ?) echo "Unknown argument";;
         esac
     done
+
+    for i in ${!val_choices[@]}; do
+        for (( j = 0; j < $DB_COUNT; ++j)); do
+            if [[ "${val_choices[$i]}" =~ ${DB[$j,$i]} ]]; then
+                matches+=($j)
+            fi
+        done
+    done
+
+    for i in ${matches[@]}; do
+        echo ${DB[$i,pid]}, ${DB[$i,name]} ${DB[$i,address]} ${DB[$i,phoneNum]} ${DB[$i,email]}
+    done
+
 }
 
 ############################################################
@@ -160,7 +167,7 @@ findRecord() {
 ############################################################
 addRecord() {
     # Calculate the primary id, starts at 0, no need to offset
-    local pID=$((${#database[@]}))
+    local pID=$DB_COUNT
     local loc_name
     local loc_addr
     local loc_phoneNum
@@ -181,7 +188,17 @@ addRecord() {
 ############################################################
 removeRecord() {
     # Assume that you get primary id
-    echo "null"
+    local pID
+    read -p "What is the primary id of the person you want to remove> " pID
+
+    if [ "${DB[$pID,pid]}" ]; then
+        echo "Removing ${DB[$pID,name]}"
+        for ((i = 0; i < ${#FIELDS[@]}; ++i)); do
+            unset DB[$i,${FIELDS[$i]}]
+        done
+    else
+        echo "The person with that primary id does not exist"
+    fi
 }
 
 ############################################################
@@ -196,7 +213,7 @@ populateDatabase
 while :; do
     printMenu
     case "$selection" in 
-        a) displayRecords; echo ;;
+        a) displayRecords $DB; echo ;;
         b) findRecord;     echo ;;
         c) addRecord;      echo ;;
         d) updateRecord;   echo ;;
