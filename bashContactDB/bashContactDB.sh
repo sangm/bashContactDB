@@ -53,7 +53,9 @@ addEntry() {
 updateDB() {
     mv ${DATABASE_FILE}  ${DATABASE_FILE}_backup
     for (( i=0; i < $DB_COUNT; ++i )); do
-        echo "${DB[$i,pid]} | ${DB[$i,name]} | ${DB[$i,address]} | ${DB[$i,phoneNum]} | ${DB[$i,email]}" >> $DATABASE_FILE
+        if [ -n ${DB[$i,pid]} ]; then
+            echo "${DB[$i,pid]} | ${DB[$i,name]} | ${DB[$i,address]} | ${DB[$i,phoneNum]} | ${DB[$i,email]}" >> $DATABASE_FILE
+        fi
     done
 }
 
@@ -167,7 +169,7 @@ findRecord() {
 ############################################################
 addRecord() {
     # Calculate the primary id, starts at 0, no need to offset
-    local pID=$DB_COUNT
+    local pID=$((${DB[$((DB_COUNT-1)),pid]} + 1))
     local loc_name
     local loc_addr
     local loc_phoneNum
@@ -194,8 +196,9 @@ removeRecord() {
     if [ "${DB[$pID,pid]}" ]; then
         echo "Removing ${DB[$pID,name]}"
         for ((i = 0; i < ${#FIELDS[@]}; ++i)); do
-            unset DB[$i,${FIELDS[$i]}]
+            unset DB[$pID,${FIELDS[$i]}]
         done
+        updateDB
     else
         echo "The person with that primary id does not exist"
     fi
@@ -205,7 +208,9 @@ removeRecord() {
 # Function updates a record from the database
 ############################################################
 updateRecord() {
-    echo "null"    
+    local pID
+    read -p "What is the primary id of the person you want to update> " pID
+
 }
 
 populateDatabase
