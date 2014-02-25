@@ -38,12 +38,6 @@ addEntry() {
         shift
     done
     
-#    DB[$DB_COUNT,pid]=$(trimWhiteSpace $1)
-#    DB[$DB_COUNT,name]=$(trimWhiteSpace $2)
-#    DB[$DB_COUNT,address]=$(trimWhiteSpace $3)
-#    DB[$DB_COUNT,phoneNum]=$(trimWhiteSpace $4)
-#    DB[$DB_COUNT,email]=$(trimWhiteSpace $5)
-
     ((DB_COUNT++))
 }
 
@@ -61,13 +55,14 @@ updateDB() {
 }
 
 ############################################################
-# 
+# Parameters: An array with duplicate entries
+# Outout: Returns an array with only unique elements
 ############################################################
 removeDuplicatesFromArray() {
 #    echo "${QUERY_MATCH[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '
     local TEST_ARR=$(echo "${QUERY_MATCH[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' ')
     unset QUERY_MATCH
-    QUERY_MATCH=${TEST_ARR[@]}
+    QUERY_MATCH=("${TEST_ARR[@]}")
     unset TEST_ARR
 }
 
@@ -160,7 +155,8 @@ findRecord() {
             e)  local email=$(trimWhiteSpace ${OPTARG//\"/})
                 val_choices[email]="$email";;
             :) echo "$OPTARG needs an argument";;
-            ?) echo "Unknown argument";;
+            ?)  echo "Usage: -p primary key|-n name|-a address|-# phone number|-e email"
+                echo "Example: -n\"Sang Mercado\"|-a\"Address 123\"";;
         esac
     done
 
@@ -171,9 +167,6 @@ findRecord() {
             fi
         done
     done
-
-    removeDuplicatesFromArray ${QUERY_MATCH[@]}
-
 }
 
 ############################################################
@@ -204,9 +197,8 @@ removeRecord() {
     # Assume that you get primary id
     local pID
     read -p "What is the primary id of the person you want to remove> " pID
-    local query="-p$pID"
 
-    findRecord "$query"
+    findRecord "-p$pID"
     local index=${QUERY_MATCH[0]}
 
     if [[ -z "$index" ]]; then
@@ -234,7 +226,6 @@ updateRecord() {
     local OPTIND
 
     read -p "What is the primary id of the person you want to update> " pID
-    query="-p$pID"
 
     findRecord "-p$pID"
     local index=${QUERY_MATCH[0]}
@@ -253,10 +244,10 @@ updateRecord() {
             \#) DB[$index,phoneNum]=${OPTARG//\"/}};;
             e)  DB[$index,email]=${OPTARG//\"/};;
             :)  echo "$OPTARG needs an argument ";;
-            ?)  echo "Unknown Option";;
+            ?)  echo "Usage: -n name|-a address|-# phone number|-e email"
+                echo "Example: -n\"Sang Mercado\"|-a\"Address 123\"";;
           esac
     done
-
     updateDB
 }
 
@@ -269,6 +260,7 @@ while :; do
         b) 
             read -p "query> " query
             findRecord "$query"
+            removeDuplicatesFromArray "${QUERY_MATCH[@]}"
             for index in ${QUERY_MATCH[@]}; do
                 printf "%s\t%s\t%s\t%s\t%s\n" "${DB[$index,pid]}" "${DB[$index,name]}" \
                     "${DB[$index,address]}" "${DB[$index,phoneNum]}" "${DB[$index,email]}"
