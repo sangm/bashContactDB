@@ -199,7 +199,7 @@ removeRecord() {
 
     if [[ -z "$index" ]]; then
         echo "There is no record associated with that primary key"
-        return -1
+        return 1
     fi
 
     if [ "${DB[$index,pid]}" ]; then
@@ -229,12 +229,12 @@ updateRecord() {
 
     if [[ -z "$index" ]]; then
         echo "There is no record associated with that primary key"
-        return -1
+        return 1
     fi
     read -p "What do you want to update? " update
     local update_arr=($update)
 
-    while getopts "n:a:#:e:" opt "${update_arr[@]}"; do
+    while getopts "n:a:#:e:" opt ${update_arr[@]}; do
         case "$opt" in
             n)  DB[$index,name]="$OPTARG";;
             a)  DB[$index,address]="$OPTARG";;
