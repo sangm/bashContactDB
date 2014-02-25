@@ -197,6 +197,11 @@ removeRecord() {
     findRecord "$query"
     local index=${QUERY_MATCH[0]}
 
+    if [[ -z "$index" ]]; then
+        echo "There is no record associated with that primary key"
+        return -1
+    fi
+
     if [ "${DB[$index,pid]}" ]; then
         echo "Removing ${DB[$index,name]}"
         for ((i = 0; i < ${#FIELDS[@]}; ++i)); do
@@ -214,6 +219,7 @@ removeRecord() {
 updateRecord() {
     local pID
     local IFS='|'
+    local OPTIND
 
     read -p "What is the primary id of the person you want to update> " pID
     query="-p$pID"
@@ -221,6 +227,10 @@ updateRecord() {
     findRecord "-p$pID"
     local index=${QUERY_MATCH[0]}
 
+    if [[ -z "$index" ]]; then
+        echo "There is no record associated with that primary key"
+        return -1
+    fi
     read -p "What do you want to update? " update
     local update_arr=($update)
 
