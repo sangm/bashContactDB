@@ -61,6 +61,17 @@ updateDB() {
 }
 
 ############################################################
+# 
+############################################################
+removeDuplicatesFromArray() {
+#    echo "${QUERY_MATCH[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '
+    local TEST_ARR=$(echo "${QUERY_MATCH[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' ')
+    unset QUERY_MATCH
+    QUERY_MATCH=${TEST_ARR[@]}
+    unset TEST_ARR
+}
+
+############################################################
 ################# List of Program Functions ################
 ############################################################
 
@@ -68,7 +79,7 @@ updateDB() {
 # variable "selection" to what the user input
 ############################################################
 printMenu() {
-    declare -A local options=(
+    declare -A options=(
         ["a"]="Display all the records"
         ["b"]="Find a record"
         ["c"]="Add a new record"
@@ -81,8 +92,7 @@ printMenu() {
     for opt in ${!options[@]}; do
         printf "[$opt]\t${options[$opt]}\n"
     done
-    echo -n "-> Selection: "
-    read selection
+    read -p "-> Selection: " selection
     echo 
 }
 
@@ -145,7 +155,7 @@ findRecord() {
                 val_choices[name]="$name";;
             a)  local addr=$(trimWhiteSpace ${OPTARG//\"/})
                 val_choices[address]="$addr";;
-            \#) local pnum=$(trimWhiteSpace ${$OPTARG//\"/})
+            \#) local pnum=$(trimWhiteSpace ${OPTARG//\"/})
                 val_choices[phoneNum]="$pnum";;
             e)  local email=$(trimWhiteSpace ${OPTARG//\"/})
                 val_choices[email]="$email";;
@@ -161,6 +171,8 @@ findRecord() {
             fi
         done
     done
+
+    removeDuplicatesFromArray ${QUERY_MATCH[@]}
 
 }
 
@@ -258,8 +270,8 @@ while :; do
             read -p "query> " query
             findRecord "$query"
             for index in ${QUERY_MATCH[@]}; do
-                printf "%s\t%s\t%s\t%s\t%s\n"  ${DB[$index,pid]} ${DB[$index,name]} \
-                    ${DB[$index,address]} ${DB[$index,phoneNum]} ${DB[$index,email]}
+                printf "%s\t%s\t%s\t%s\t%s\n" "${DB[$index,pid]}" "${DB[$index,name]}" \
+                    "${DB[$index,address]}" "${DB[$index,phoneNum]}" "${DB[$index,email]}"
             done
             echo ;;
         c) addRecord;      echo ;;
