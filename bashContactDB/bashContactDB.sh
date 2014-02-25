@@ -123,8 +123,8 @@ displayRecords() {
 }
 
 ############################################################
-# Function asks the user for an input and queries the 
-# "database"
+# Function takes a query as a parameter and sets the 
+# global array 
 ############################################################
 findRecord() {
 #    read -p "query> " query 
@@ -231,7 +231,7 @@ updateRecord() {
         echo "There is no record associated with that primary key"
         return 1
     fi
-    read -p "What do you want to update? " update
+    read -p "query> " update
     local update_arr=($update)
 
     while getopts "n:a:#:e:" opt ${update_arr[@]}; do
