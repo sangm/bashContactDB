@@ -236,14 +236,16 @@ updateRecord() {
 
     while getopts "n:a:#:e:" opt ${update_arr[@]}; do
         case "$opt" in
-            n)  DB[$index,name]="$OPTARG";;
-            a)  DB[$index,address]="$OPTARG";;
-            \#) DB[$index,phoneNum]="$OPTARG";;
-            e)  DB[$index,email]="$OPTARG";;
+            n)  DB[$index,name]=${OPTARG//\"/};;
+            a)  DB[$index,address]=${OPTARG//\"/};;
+            \#) DB[$index,phoneNum]=${OPTARG//\"/}};;
+            e)  DB[$index,email]=${OPTARG//\"/};;
             :)  echo "$OPTARG needs an argument ";;
             ?)  echo "Unknown Option";;
           esac
     done
+
+    updateDB
 }
 
 populateDatabase
