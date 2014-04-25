@@ -132,9 +132,6 @@ displayRecords() {
 # global array 
 ############################################################
 findRecord() {
-#    read -p "query> " query 
-#    read query <<< $(echo "-p0|-a\"Fake Address A\"|-n\"Sang Mercado\"")
-
     local IFS='|'   
     local query_arr=($1)
     declare -A val_choices
