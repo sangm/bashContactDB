@@ -13,4 +13,10 @@ useful features in the language and tried to apply to this project.
 * List People
     * Using tput to list colors and underline in terminal
     ![Screenshot](/img/dbList.png?raw=true)
+* Query People
+    * Using pipes to separate query fields and use getopt to parse different options
+    ![Screenshot](/img/dbQuery.png?raw=true)
+* Update People
+    * Same as Query
+    ![Screenshot](/img/dbUpdate.png?raw=true)
 
