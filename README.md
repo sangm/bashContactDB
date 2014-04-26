@@ -12,5 +12,5 @@ useful features in the language and tried to apply to this project.
 
 * List People
     * Using tput to list colors and underline in terminal
-    * ![Screenshot](/img/dbList.png?raw=true)
+    ![Screenshot](/img/dbList.png?raw=true)
 
