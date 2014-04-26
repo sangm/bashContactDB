@@ -1,11 +1,12 @@
 Bash Contact Database
 ===
 
-This project is an introduction to the bash scripting language.
-I have done extensive research (~2 months) and found most of the 
-useful features in the language and tried to apply to this project.
+This project was done as an introduction to the bash scripting language.
+This was my first time doing bash, so I am sure there are errors, however, I 
+have spent much time researching what is the considered to be the "best"
+way to program in bash.
 
-* List of Bash Features
+* List of Bash Features that I used
     * Associative Arrays
     * Regex Comparison
     * String Replacement
